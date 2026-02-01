@@ -31,7 +31,7 @@ import {
   PostCategory 
 } from '../types';
 
-// Thử bật chế độ Offline để app không bị crash khi mạng yếu
+// Thử bật chế độ Offline
 try {
     enableIndexedDbPersistence(db).catch((err) => {
         if (err.code == 'failed-precondition') {
@@ -43,13 +43,32 @@ try {
 } catch(e) {}
 
 /**
- * Helper to handle Firebase specific errors like "database not found"
+ * Helper to handle Firebase specific errors
  */
 const handleFirebaseError = (error: any, context: string) => {
   console.error(`Lỗi Firestore (${context}):`, error);
-  if (error.code === 'not-found' || error.message?.includes('database (default) does not exist')) {
-    console.error(`BẠN CẦN KÍCH HOẠT FIRESTORE TRONG CONSOLE: https://console.cloud.google.com/datastore/setup?project=websitesuoilu-a10fa`);
+  
+  if (error.code === 'permission-denied') {
+    const snippet = `
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
   }
+}`;
+    console.warn("%c HƯỚNG DẪN CẤU HÌNH FIREBASE RULES:", "color: yellow; background: red; font-weight: bold; padding: 4px;");
+    console.warn("Bạn cần dán đoạn mã sau vào tab 'Rules' của Firestore trong Firebase Console:");
+    console.warn(snippet);
+    
+    // Create a custom error that the UI can recognize
+    const permError = new Error("Permission Denied");
+    (permError as any).code = 'permission-denied';
+    throw permError;
+  }
+  throw error;
 };
 
 /**
@@ -80,8 +99,7 @@ export const DatabaseService = {
         return docRef.id;
       }
     } catch (error) {
-      handleFirebaseError(error, 'savePost');
-      throw error;
+      return handleFirebaseError(error, 'savePost');
     }
   },
 
@@ -92,8 +110,7 @@ export const DatabaseService = {
       const querySnapshot = await getDocs(q);
       return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Post[];
     } catch (error) {
-      handleFirebaseError(error, 'getPosts');
-      return []; 
+      return handleFirebaseError(error, 'getPosts');
     }
   },
 
@@ -110,8 +127,7 @@ export const DatabaseService = {
       const snap = await getDocs(collection(db, 'post_categories'));
       return snap.docs.map(d => ({ id: d.id, ...d.data() } as PostCategory));
     } catch (e) { 
-      handleFirebaseError(e, 'getPostCategories');
-      return []; 
+      return handleFirebaseError(e, 'getPostCategories');
     }
   },
 
@@ -146,8 +162,7 @@ export const DatabaseService = {
       const snap = await getDocs(collection(db, 'documents'));
       return snap.docs.map(d => ({ id: d.id, ...d.data() } as SchoolDocument));
     } catch (e) { 
-      handleFirebaseError(e, 'getDocuments');
-      return []; 
+      return handleFirebaseError(e, 'getDocuments');
     }
   },
 
@@ -164,8 +179,7 @@ export const DatabaseService = {
       const snap = await getDocs(collection(db, 'document_categories'));
       return snap.docs.map(d => ({ id: d.id, ...d.data() } as DocumentCategory));
     } catch (e) { 
-      handleFirebaseError(e, 'getDocCategories');
-      return []; 
+      return handleFirebaseError(e, 'getDocCategories');
     }
   },
 
@@ -201,8 +215,7 @@ export const DatabaseService = {
       const snap = await getDocs(collection(db, 'albums'));
       return snap.docs.map(d => ({ id: d.id, ...d.data() } as GalleryAlbum));
     } catch (e) { 
-      handleFirebaseError(e, 'getAlbums');
-      return []; 
+      return handleFirebaseError(e, 'getAlbums');
     }
   },
 
@@ -228,8 +241,7 @@ export const DatabaseService = {
       const snap = await getDocs(collection(db, 'gallery'));
       return snap.docs.map(d => ({ id: d.id, ...d.data() } as GalleryImage));
     } catch (e) { 
-      handleFirebaseError(e, 'getGallery');
-      return []; 
+      return handleFirebaseError(e, 'getGallery');
     }
   },
 
@@ -255,8 +267,7 @@ export const DatabaseService = {
       const snap = await getDocs(collection(db, 'videos'));
       return snap.docs.map(d => ({ id: d.id, ...d.data() } as Video));
     } catch (e) { 
-      handleFirebaseError(e, 'getVideos');
-      return []; 
+      return handleFirebaseError(e, 'getVideos');
     }
   },
 
@@ -282,8 +293,7 @@ export const DatabaseService = {
       const snap = await getDocs(collection(db, 'blocks'));
       return snap.docs.map(d => ({ id: d.id, ...d.data() } as DisplayBlock));
     } catch (e) { 
-      handleFirebaseError(e, 'getBlocks');
-      return []; 
+      return handleFirebaseError(e, 'getBlocks');
     }
   },
 
@@ -319,8 +329,7 @@ export const DatabaseService = {
       const snap = await getDocs(collection(db, 'menu'));
       return snap.docs.map(d => ({ id: d.id, ...d.data() } as MenuItem));
     } catch (e) { 
-      handleFirebaseError(e, 'getMenu');
-      return []; 
+      return handleFirebaseError(e, 'getMenu');
     }
   },
 
@@ -348,8 +357,7 @@ export const DatabaseService = {
       const snap = await getDocs(collection(db, 'staff'));
       return snap.docs.map(d => ({ id: d.id, ...d.data() } as StaffMember));
     } catch (e) { 
-      handleFirebaseError(e, 'getStaff');
-      return []; 
+      return handleFirebaseError(e, 'getStaff');
     }
   },
 
@@ -375,8 +383,7 @@ export const DatabaseService = {
       const snap = await getDocs(collection(db, 'introductions'));
       return snap.docs.map(d => ({ id: d.id, ...d.data() } as IntroductionArticle));
     } catch (e) { 
-      handleFirebaseError(e, 'getIntroductions');
-      return []; 
+      return handleFirebaseError(e, 'getIntroductions');
     }
   },
 
@@ -402,8 +409,7 @@ export const DatabaseService = {
       const snap = await getDocs(collection(db, 'users'));
       return snap.docs.map(d => ({ id: d.id, ...d.data() } as User));
     } catch (e) { 
-      handleFirebaseError(e, 'getUsers');
-      return []; 
+      return handleFirebaseError(e, 'getUsers');
     }
   },
 
@@ -429,8 +435,7 @@ export const DatabaseService = {
       const snap = await getDoc(doc(db, 'settings', 'school_config'));
       return snap.exists() ? (snap.data() as SchoolConfig) : null;
     } catch (e) { 
-      handleFirebaseError(e, 'getConfig');
-      return null; 
+      return handleFirebaseError(e, 'getConfig');
     }
   },
 
@@ -450,7 +455,7 @@ export const DatabaseService = {
         last_visit: serverTimestamp()
       }, { merge: true });
     } catch(e) {
-      handleFirebaseError(e, 'trackVisit');
+      // Non-critical error
     }
   },
 
@@ -465,7 +470,6 @@ export const DatabaseService = {
         online: Math.floor(Math.random() * 5) + 1 
       };
     } catch (e) { 
-      handleFirebaseError(e, 'getVisitorStats');
       return { total: 0, today: 0, month: 0, online: 1 }; 
     }
   }
